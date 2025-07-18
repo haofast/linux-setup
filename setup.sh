@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # update sources with "contrib non-free"
-sudo sed -i '/^deb.*deb.debian.org\/debian\/.*main/s/main/& contrib non-free/' /etc/apt/sources.list
+sed -i '/^deb.*deb.debian.org\/debian\/.*main/s/main/& contrib non-free/' /etc/apt/sources.list
 
 # add x86 architecture support
 dpkg --add-architecture i386
@@ -48,3 +48,6 @@ if [ "$gpu == *NVIDIA*" ]; then
   nvidia_driver_version=$(nvidia-detect | awk '/recommended to install the/{getline;print$NF}')
   apt install --assume-yes $nvidia_driver_version
 fi
+
+# clear interfaces file
+reboot
