@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# update sources with "contrib non-free"
+sudo sed -i '/^deb.*deb.debian.org\/debian\/.*main/s/main/& contrib non-free/' /etc/apt/sources.list
+
 # add x86 architecture support
 dpkg --add-architecture i386
 
@@ -40,7 +43,7 @@ flatpak install flathub -y dev.vencord.Vesktop com.visualstudio.code
 # nvidia driver setup
 gpu=$(lspci | grep -i '.* vga .* nvidia .*')
 
-if [[ $gpu == *' nvidia '* ]]; then
+if [ "$gpu == *NVIDIA*" ]; then
   apt install --assume-yes nvidia-detect
   nvidia_driver_version=$(nvidia-detect | awk '/recommended to install the/{getline;print$NF}')
   apt install --assume-yes $nvidia_driver_version
