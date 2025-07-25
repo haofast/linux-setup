@@ -1,53 +1,44 @@
 #!/bin/sh
 
-# update sources with "contrib non-free"
+ROOT_DIR=$(pwd)
+APT_INSTALL_PACKAGES=$(cat ./packages/apt-install.txt | tr '\n' ' ')
+APT_REMOVE_PACKAGES=$(cat ./packages/apt-remove.txt | tr '\n' ' ')
+FLATPAK_PACKAGES=$(cat ./packages/flatpak.txt)
+SNAP_PACKAGES=$(cat ./packages/snap.txt)
+
+
 sed -i '/^deb.*deb.debian.org\/debian\/.*main/s/main/& contrib non-free/' /etc/apt/sources.list
 
-# add x86 architecture support
 dpkg --add-architecture i386
 
-# update package index
 apt-get update
-apt-get install --assume-yes \
-  kde-plasma-desktop \
-  cups \
-  print-manager \
-  network-manager \
-  kde-spectacle \
-  kcalc \
-  okular \
-  ark \
-  gwenview \
-  vlc \
-  firefox-esr \
-  timeshift \
-  thunderbird \
-  libreoffice \
-  libreoffice-kf5 \
-  neofetch \
-  btop \
-  rclone \
-  flatpak \
-  snapd \
-  plasma-discover-backend-flatpak \
-  plasma-discover-backend-snap
 
-# remove bundled apps
-apt-get purge --assume-yes konqueror* zutty* imagemagick*
+apt-get install --assume-yes $APT_INSTALL_PACKAGES
+
+apt-get purge --assume-yes $APT_REMOVE_PACKAGES
+
 apt-get autopurge --assume-yes
 
-# flatpak app setup
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install flathub -y dev.vencord.Vesktop com.visualstudio.code
 
-# nvidia driver setup
-gpu=$(lspci | grep -i '.* vga .* nvidia .*')
+for package in $FLATPAK_PACKAGES;
+  do flatpak install flathub -y "$package";
+done
 
-if [ "$gpu == *NVIDIA*" ]; then
-  apt install --assume-yes nvidia-detect
-  nvidia_driver_version=$(nvidia-detect | awk '/recommended to install the/{getline;print$NF}')
-  apt install --assume-yes $nvidia_driver_version
+for package in $SNAP_PACKAGES;
+  do snap install "$package";
+done
+
+if [ "$(lspci | grep -i '.* vga .* nvidia .*') == *NVIDIA*" ]; then
+  sh ./scripts/install-nvidia-driver.sh;
 fi
 
-# clear interfaces file
+if [ "$(ls /proc/acpi | grep ibm) == ibm" ]; then
+  for script in $(find ./configs/thinkpad/**/setup.sh); do
+    cd "$ROOT_DIR" && cd $(dirname $script) && sh setup.sh
+  done
+fi
+
+echo "" | tee /etc/network/interfaces
+
 reboot
